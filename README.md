@@ -1,0 +1,2 @@
+# docs
+go-binfmt documentation
