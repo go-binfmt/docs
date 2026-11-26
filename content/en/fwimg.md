@@ -109,17 +109,20 @@ linux/arm64, one core, medians of 40 rounds):
 | 32 MiB | 1.0x | 1.2x | 1.1x | 13.3x |
 
 Reading text (`-I ihex` / `-I srec` to a flat binary) on the CI runner (Ubuntu
-x86-64, objcopy 2.46, 60 rounds, one core; the `bench` job of run 45782805864 on
-`go-binfmt/fwimg` main at `6519340bbf43`):
+x86-64, objcopy 2.46, 60 rounds, one core; the `bench` job of run 45888191102 on
+`go-binfmt/fwimg` main at `2d5d60c2d0f0`, v0.4.3):
 
-| File | `-I ihex` | `-I srec` |
-|------|----------:|----------:|
-| 1 KiB | 0.6x | 0.6x |
-| 4 MiB | 1.5x | 1.4x |
-| 32 MiB | 1.5x | 1.4x |
+| File | `-O binary` | `-I ihex` | `-I srec` |
+|------|------------:|----------:|----------:|
+| 1 KiB | 0.6x | 0.6x | 0.6x |
+| 4 MiB | 0.9x | 1.6x | 1.5x |
+| 32 MiB | 1.0x | 1.7x | 1.5x |
 
-On the same runner the output rows are 0.6x, 1.0x and 1.1x to 1.2x for the
-flat binary and text formats at 1 KiB, 4 MiB and 32 MiB (flat binary 0.5x and
-0.6x at 4 and 32 MiB, an open defect). The small-file gap is process start-up, tracked in
+On the same runner the `-O srec` and `-O ihex` rows are 1.1x at 4 MiB and 1.3x
+at 32 MiB. The flat binary was 0.5x and 0.6x at 4 and 32 MiB before v0.4.2
+(go-binfmt/fwimg#17: it built a second image and truncated an existing output
+in place); v0.4.2 streams the segments and unlinks the output first, v0.4.3
+maps an ELF input. The 4 MiB flat row is still behind by about 0.3 ms, a
+start-up cost of the Go runtime, like the 1 KiB rows, tracked in
 [go-binfmt/fwimg#2](https://github.com/go-binfmt/fwimg/issues/2). See the
 [README](https://github.com/go-binfmt/fwimg#benchmark) for the method.
