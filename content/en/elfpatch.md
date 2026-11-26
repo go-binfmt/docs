@@ -127,6 +127,13 @@ with the permissions its flags need; `PT_INTERP`, `PT_DYNAMIC` and `PT_PHDR`
 matching; no overlapping or writable-and-executable segment added). Anything else
 is `ErrVerify`.
 
+## Reading section headers {#sections}
+
+Since v0.5.0, `File.Sections()` returns the section headers (name, type, flags,
+address, file offset, size) in file order, read with the decoder the growing
+edits use; a section that lies outside the image is refused with `ErrCorrupt`,
+and an image without a section table (a stripped binary) with `ErrUnsupported`. [fwimg](../fwimg) uses it for `-j` / `-R`.
+
 ## Tested against patchelf {#differential}
 
 `differential_test.go` and `differential_growth_test.go` build real ELF files with

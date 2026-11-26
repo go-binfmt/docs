@@ -52,6 +52,39 @@ Overlapping records and data past 4 GiB are refused, not merged or wrapped. They
 are checked against `objcopy -I`, `srec_cat`, `mkimage -l` and `dumpimage` in CI,
 and fuzzed.
 
+## objcopy's options {#options}
+
+Since v0.4.0 the options that shape an image are objcopy's, with the same names,
+and the S-record and Intel HEX output is byte for byte what objcopy writes (the
+S0 header text aside), CRLF included with `--crlf`:
+
+```sh
+fwimg -O srec -j '.text*' -j .rodata -o fw.srec fw.elf        # keep sections; * and ? match
+fwimg -O srec -R '.*' -R '!.text' -o fw.srec fw.elf           # drop sections; ! protects
+fwimg -O srec --gap-fill 0xff --pad-to 0x90400 -o fw.srec fw.elf
+fwimg -O ihex --change-addresses 0x100 -o fw.hex fw.elf       # --adjust-vma: the same
+fwimg -O ihex --set-start 0x80010 -o fw.hex fw.elf            # --change-start N: an increment
+fwimg -O srec --srec-addr-len auto --srec-count --crlf -o fw.srec fw.elf
+fwimg -O ihex --ihex-mode objcopy --crlf -o fw.hex fw.elf
+```
+
+- `-j` and `-R` select by section name and need an ELF with section headers
+  (read with [elfpatch](../elfpatch) v0.5.0); giving both is refused, as objcopy
+  calls it undefined.
+- `--srec-addr-len 16|24|32|auto` picks S1/S9, S2/S8 or S3/S7 (auto: the shortest
+  that holds the highest address, as objcopy does); `--srec-count` adds the S5
+  (or S6) count record, as `srec_cat` does.
+- `--ihex-mode linear` (the default) writes type 04 and type 05 records, as
+  `srec_cat`; `objcopy` writes type 02 below 1 MiB and a type 03 start record.
+  An ELF's entry address is now written to Intel HEX; before v0.4.0 it was
+  dropped.
+- Line endings stay LF unless `--crlf` is given.
+
+In Go: `ELFImage`, `ELFSections` with a `SectionSelect`, `EncodeSRECOpts` and
+`EncodeIHEXOpts`, and `Image.GapFill`, `PadTo` and `Offset`. The options are
+compared with objcopy 2.44 and srec_cat 1.64 in CI (the lane fails if a tool is
+missing).
+
 ## What it refuses {#refusals}
 
 The input is untrusted, so the module refuses rather than guesses:
@@ -75,6 +108,18 @@ linux/arm64, one core, medians of 40 rounds):
 | 4 MiB | 1.1x | 1.2x | 1.2x | 8.8x |
 | 32 MiB | 1.0x | 1.2x | 1.1x | 13.3x |
 
-The small-file gap is process start-up, tracked in
+Reading text (`-I ihex` / `-I srec` to a flat binary) on the CI runner (Ubuntu
+x86-64, objcopy 2.46, 60 rounds, one core; the `bench` job of run 45782805864 on
+`go-binfmt/fwimg` main at `6519340bbf43`):
+
+| File | `-I ihex` | `-I srec` |
+|------|----------:|----------:|
+| 1 KiB | 0.6x | 0.6x |
+| 4 MiB | 1.5x | 1.4x |
+| 32 MiB | 1.5x | 1.4x |
+
+On the same runner the output rows are 0.6x, 1.0x and 1.1x to 1.2x for the
+flat binary and text formats at 1 KiB, 4 MiB and 32 MiB (flat binary 0.5x and
+0.6x at 4 and 32 MiB, an open defect). The small-file gap is process start-up, tracked in
 [go-binfmt/fwimg#2](https://github.com/go-binfmt/fwimg/issues/2). See the
 [README](https://github.com/go-binfmt/fwimg#benchmark) for the method.
