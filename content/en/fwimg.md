@@ -85,6 +85,23 @@ In Go: `ELFImage`, `ELFSections` with a `SectionSelect`, `EncodeSRECOpts` and
 compared with objcopy 2.44 and srec_cat 1.64 in CI (the lane fails if a tool is
 missing).
 
+## Safety checks {#safety}
+
+Since v0.5.0:
+
+- A gap refusal names the `PT_LOAD` segments and sections with LMA and VMA and
+  says which of `--use-vaddr` or `-R .data` fits; `--gap-warn N` (default 8)
+  warns when a hole is more than N times the payload.
+- `--region NAME=START:SIZE` (repeatable, `K`/`M` suffixes) refuses a segment
+  that overflows its region or lies outside every region, naming the segment and
+  the byte excess, in ld's wording.
+- The output is read back and compared byte for byte (binary) or address by
+  address (S-record, Intel HEX, uImage, start address included) after every
+  write; on a mismatch there is an error and no file. `--no-verify` turns it
+  off. Non-regular outputs (devices, symlinks) are not read back.
+- `SOURCE_DATE_EPOCH` sets the uImage time as mkimage does; an invalid value is
+  refused. Unset, the time is 0, where mkimage uses the input's mtime.
+
 ## What it refuses {#refusals}
 
 The input is untrusted, so the module refuses rather than guesses:
