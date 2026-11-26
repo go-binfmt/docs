@@ -28,6 +28,30 @@ flat, base, err := fwimg.Flatten(bytes.NewReader(elf), int64(len(elf)), fwimg.Fl
 `Flatten` takes the size of the input; `SREC`, `IHEX` and `UImage` return an
 error.
 
+## Reading other formats {#input}
+
+The input does not have to be an ELF. `fwimg` recognises an ELF, an Intel HEX
+file, an S-record file and a uImage by their magic or syntax, so any of them
+converts to any output; `-I` forces the format. A raw file is never guessed:
+it needs `-I binary --base ADDR`, as `objcopy -I binary` needs its address.
+
+```sh
+fwimg -I ihex -O binary -o fw.bin fw.hex
+fwimg -I binary --base 0x8000000 -O srec -o fw.srec fw.bin
+fwimg info uImage          # the header, as `mkimage -l` prints it
+```
+
+In Go, `DecodeIHEX`, `DecodeSREC`, `ParseUImage`, `RawImage` and `Detect` return
+an `Image` of sparse segments (with the entry point and the name), which
+`EncodeSREC` and `EncodeIHEX` write back.
+
+The decoders check what the formats define and say where it fails: checksums
+(with the line number), the end record, the S5/S6 count, both uImage CRCs and
+the size table of a multi-file image, which is bounded by the header's size.
+Overlapping records and data past 4 GiB are refused, not merged or wrapped. They
+are checked against `objcopy -I`, `srec_cat`, `mkimage -l` and `dumpimage` in CI,
+and fuzzed.
+
 ## What it refuses {#refusals}
 
 The input is untrusted, so the module refuses rather than guesses:
@@ -36,7 +60,9 @@ The input is untrusted, so the module refuses rather than guesses:
   it is allocated (`FlattenOptions.MaxSize`, a caller-stated limit);
 - a segment that lies outside the input;
 - an address range that wraps;
-- SREC and Intel HEX data that would pass 4 GiB, instead of wrapping.
+- SREC and Intel HEX data that would pass 4 GiB, instead of wrapping;
+- text records that arrive scattered, each separate piece being charged against
+  the same size limit.
 
 ## Benchmark {#benchmark}
 
