@@ -17,7 +17,7 @@ organisation takes the other formats, one repository per job.
 | Module | Layer | What it does |
 |--------|-------|--------------|
 | [`elfpatch`]({{< relref "elfpatch.md" >}}) | library and CLI | Read and edit an ELF file's interpreter, `RUNPATH`/`RPATH` and `DT_NEEDED`, with patchelf's flag names. In-place, atomic, verified after the write. |
-| [`fwimg`]({{< relref "fwimg.md" >}}) | library and CLI | Convert an ELF into a flat binary, Motorola S-record, Intel HEX, U-Boot uImage (gzip or lz4 too), UF2 or Verilog hex, refusing sizes and address ranges the input does not support. Moved here from `go-coff/peln/fwimg`. |
+| [`fwimg`]({{< relref "fwimg.md" >}}) | library and CLI | Convert an ELF into a flat binary, Motorola S-record, Intel HEX, U-Boot uImage (gzip or lz4 too), UF2 or Verilog hex, refusing sizes and address ranges the input does not support. [Runs in your browser]({{< relref "fwimg.md#playground" >}}) as WebAssembly. Moved here from `go-coff/peln/fwimg`. |
 | [`fdt`]({{< relref "fdt.md" >}}) | library and CLI | Read and write devicetree blobs (DTB v17), with output byte-identical to `dtc` and every bound of untrusted input checked. |
 
 ## Why not call patchelf? {#why-not-call-patchelf}

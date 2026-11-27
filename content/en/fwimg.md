@@ -29,6 +29,18 @@ flat, base, err := fwimg.Flatten(bytes.NewReader(elf), int64(len(elf)), fwimg.Fl
 `Flatten` takes the size of the input; `SREC`, `IHEX` and `UImage` return an
 error.
 
+## Try it in your browser {#playground}
+
+The [fwimg playground](../fwimg-playground/) runs the real command,
+built for WebAssembly (`GOOS=js GOARCH=wasm`, v0.8.0), in a Web Worker: pick an
+ELF, Intel HEX, S-record, uImage, UF2 or Verilog file, choose a format and the
+options, and download the result. **Nothing is uploaded**: the page makes no
+request that carries your file, its Content-Security-Policy allows no other
+origin, and the input is limited to 32 MiB. The playground produces the same
+bytes as the native build (a test compares exit code, output and messages on
+every release); the release also carries a `wasip1` build for wazero and
+wasmtime.
+
 ## Reading other formats {#input}
 
 The input does not have to be an ELF. `fwimg` recognises an ELF, an Intel HEX

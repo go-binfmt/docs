@@ -25,6 +25,11 @@ env:
   # sha256 of hugo_${HUGO_VERSION}_linux-amd64.tar.gz, from the release's checksums.txt.
   HUGO_SHA256: "4d84519b9f619e6d4c3fb45a50157abeabeb724f859c60605f44c23def6e1169"
   DOCS_URL: "https://go-binfmt.github.io/docs"
+  # The fwimg release the playground runs, and the sha256 of its three assets.
+  FWIMG_TAG: "v0.8.0"
+  FWIMG_WASM_SHA256: "42308b0190e587bb6b08963a652ad9fd916604e89ef3bc8cf09f8c88a17e98f8"
+  FWIMG_WASMEXEC_SHA256: "0c949f4996f9a89698e4b5c586de32249c3b69b7baadb64d220073cc04acba14"
+  FWIMG_ENGINE_SHA256: "c0339be554116f3e1496e7204c23afe87dffe1e2a6a12850187866a834d75594"
 
 jobs:
   build:
@@ -47,6 +52,23 @@ jobs:
           echo "${HUGO_SHA256}  /tmp/hugo.tar.gz" | sha256sum -c -
           sudo tar -xzf /tmp/hugo.tar.gz -C /usr/local/bin hugo
           hugo version
+
+      # The playground (static/fwimg-playground/) runs fwimg built for
+      # WebAssembly. The binaries are NOT committed: they are the release's
+      # assets, fetched at the pinned tag and refused unless their sha256 is the
+      # pinned one (from the release's SHA256SUMS). The wasm and wasm_exec.js
+      # are built by the same Go toolchain, and the three move together.
+      - name: Fetch the fwimg playground assets
+        run: |
+          set -eu
+          dir=static/fwimg-playground
+          base="https://github.com/go-binfmt/fwimg/releases/download/${FWIMG_TAG}"
+          curl -fsSL -o "${dir}/fwimg.wasm"    "${base}/fwimg-js-wasm.wasm"
+          curl -fsSL -o "${dir}/wasm_exec.js"  "${base}/fwimg-wasm_exec.js"
+          curl -fsSL -o "${dir}/engine.js"     "${base}/fwimg-playground.js"
+          printf '%s  %s\n' "${FWIMG_WASM_SHA256}" "${dir}/fwimg.wasm" \
+                            "${FWIMG_WASMEXEC_SHA256}" "${dir}/wasm_exec.js" \
+                            "${FWIMG_ENGINE_SHA256}" "${dir}/engine.js" | sha256sum -c -
 
       - name: Version
         id: version
