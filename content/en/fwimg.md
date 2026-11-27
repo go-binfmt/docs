@@ -95,9 +95,10 @@ Since v0.5.0:
 - `--region NAME=START:SIZE` (repeatable, `K`/`M` suffixes) refuses a segment
   that overflows its region or lies outside every region, naming the segment and
   the byte excess, in ld's wording.
-- The output is read back and compared byte for byte (binary) or address by
-  address (S-record, Intel HEX, uImage, start address included) after every
-  write; on a mismatch there is an error and no file. `--no-verify` turns it
+- The output is read back and compared byte for byte with what was written,
+  after every write; on a mismatch there is an error and no file. For S-record,
+  Intel HEX and uImage the file is decoded only when the bytes differ, to name
+  the first differing address (start address included). `--no-verify` turns it
   off. Non-regular outputs (devices, symlinks) are not read back.
 - `SOURCE_DATE_EPOCH` sets the uImage time as mkimage does; an invalid value is
   refused. Unset, the time is 0, where mkimage uses the input's mtime.
