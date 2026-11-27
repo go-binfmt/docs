@@ -102,6 +102,48 @@ Since v0.5.0:
 - `SOURCE_DATE_EPOCH` sets the uImage time as mkimage does; an invalid value is
   refused. Unset, the time is 0, where mkimage uses the input's mtime.
 
+## Manifest, info and verify {#manifest}
+
+Since v0.6.0 an image can be described, listed and checked later:
+
+```sh
+fwimg -O ihex --manifest fw.json -o fw.hex fw.elf   # the image, described
+fwimg info fw.hex                                    # any input: format, start, ranges, hashes
+fwimg info --json fw.elf                             # the same facts, as a manifest
+fwimg verify --manifest fw.json fw.hex               # re-read an image, check every hash
+fwimg verify --manifest fw.json -I binary --base 0x8000000 fw.bin
+```
+
+- **The manifest** is JSON in a fixed key order: `format`, `base`, `entry`
+  (`null` without one), `pad`, `size`, `data_size`, the CRC-32 and SHA-256 of the
+  whole image, and for each segment (and each `--region`) its address, size,
+  `source` file and both hashes. An ELF input adds its allocated sections, and a
+  uImage output its header fields. The same input and options give the same
+  bytes: there is no timestamp unless `SOURCE_DATE_EPOCH` is set, and then
+  `created` is that time in UTC.
+- **Addresses are strings** (`"0x8000000"`, lowercase hex), because a JSON number
+  cannot hold 64 bits; sizes are integers. The hashes are of the flat image from
+  `base`, gaps filled with `pad`, which is what `-O binary` writes.
+- **The schema** is [manifest-1.schema.json](https://go-binfmt.github.io/fwimg/manifest-1.schema.json)
+  (JSON Schema 2020-12, `additionalProperties: false` everywhere), also embedded
+  in the library as `fwimg.ManifestSchema`. A change that is not backward
+  compatible is `manifest-2`; `schema_version` says which one a file is.
+- **`info`** reads an ELF, Intel HEX, S-record, uImage or (`-I binary --base`) a
+  raw file. A uImage is listed as `mkimage -l` does; the others as text or, with
+  `--json`, as the manifest. Its ranges and start address are compared with
+  `srec_info` in CI.
+- **`verify`** recomputes, from the image in whatever format it is in, the base,
+  size, start address and the hashes of the whole image and of every segment and
+  region, and lists every difference (exit status 1). A manifest written for the
+  S-record checks the flat binary of the same image. `data_size` is not compared,
+  because a flat binary counts its padding; the start address is compared only if
+  the image has one.
+- The manifest reader is bounded (16 MiB, 65536 entries per list), refuses
+  unknown keys, and is fuzzed.
+
+In Go: `NewManifest`, `ReadManifest`, `(*Manifest).JSON` and `Verify`,
+`ELFManifestSections` and `UImageStored`.
+
 ## What it refuses {#refusals}
 
 The input is untrusted, so the module refuses rather than guesses:

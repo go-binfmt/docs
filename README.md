@@ -21,5 +21,13 @@ in `hugo.yaml`: set it to the release the pages describe (`v0.2.0` becomes
 workflow reads it, builds with that `--baseURL`, and replaces **only** that
 version's path.
 
+The site documents several tools, each with its own version, and has one number.
+The rule: it is **the newest release of any tool the pages describe** (the
+highest of elfpatch's and fwimg's tags), and the PR that documents a new minor of
+a tool bumps it in the same change, after that tag exists, so the pages never
+describe code that is not released. A patch release changes no page, so it moves
+nothing. An older minor's path stays as it was built. `baseURL` in `hugo.yaml` is
+kept equal to it (`v0.6.0`, `/docs/0.6/`).
+
 The build runs with `--panicOnWarning`, so a link to a page that is not there
 fails the lane instead of 404ing for a reader.
