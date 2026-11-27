@@ -10,3 +10,9 @@ __pycache__/
 .hugo_build.lock
 public/
 resources/
+
+# The fwimg playground's binaries: fetched from the fwimg release by the docs
+# workflow, never committed.
+/static/fwimg-playground/fwimg.wasm
+/static/fwimg-playground/wasm_exec.js
+/static/fwimg-playground/engine.js
