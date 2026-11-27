@@ -8,7 +8,8 @@ weight: 30
 `github.com/go-binfmt/fwimg` converts an ELF executable into the image a
 bootloader or ROM loads at a fixed address: a **flat binary**
 (`objcopy -O binary`), a **Motorola S-record**, **Intel HEX** or a legacy
-**U-Boot uImage** (`mkimage`). It is a library and a command, in pure Go, with no
+**U-Boot uImage** (`mkimage`, optionally gzip or lz4 compressed), a **UF2** file
+(`uf2conv.py`) or a **Verilog hex** memory file (`objcopy -O verilog`). It is a library and a command, in pure Go, with no
 binutils, `srec_cat` or `mkimage` on the build host.
 
 It moved here from `go-coff/peln/fwimg`, which is now deprecated; `pectl objcopy`
@@ -144,6 +145,45 @@ fwimg verify --manifest fw.json -I binary --base 0x8000000 fw.bin
 
 In Go: `NewManifest`, `ReadManifest`, `(*Manifest).JSON` and `Verify`,
 `ELFManifestSections` and `UImageStored`.
+
+## UF2, Verilog hex and compressed uImage {#l5}
+
+Since v0.7.0:
+
+```sh
+fwimg -O uimage --uimage-comp gzip --load 0x80000 --entry 0x80000 -o uImage kernel.elf
+fwimg -O uimage --uimage-comp lz4  --load 0x80000 --entry 0x80000 -o uImage kernel.elf
+fwimg -O uf2 --uf2-family rp2040 -o fw.uf2 fw.elf        # a family name or a number
+fwimg -O verilog --verilog-data-width 4 -o mem.hex fw.elf
+fwimg -I uf2 -O binary -o fw.bin fw.uf2
+fwimg -I verilog --verilog-data-width 4 -O ihex -o fw.hex mem.hex
+```
+
+- **`--uimage-comp none|gzip|lz4`** compresses the payload and sets `ih_comp`
+  (gzip 1, lz4 5); `ih_size` and the data CRC cover the compressed bytes, as
+  `mkimage` does. The gzip stream is reproducible (no time, no name, a fixed
+  level). Reading a compressed uImage decompresses it, bounded by `--max-size`: a
+  decompression bomb is refused, not expanded, and a payload marked gzip that is
+  not gzip is refused (`ErrSyntax`). `info`, `verify` and `--json` describe the
+  decompressed program; the listing keeps the header as stored.
+- **`-O uf2`** writes `uf2conv.py`'s layout: blocks of 256 payload bytes, cut where
+  the next segment starts, each padded with zeros. `--uf2-family NAME|NUMBER` sets
+  the family ID (the table is the one of microsoft/uf2 at a pinned commit; `0` is
+  refused). The reader is strict: magics, block numbers, the block count and the
+  flags are checked, and a file container or a not-main-flash block is refused.
+- **`-O verilog`** is objcopy's `$readmemh` layout: `@ADDRESS` lines in uppercase
+  hex, CRLF line ends. `--verilog-data-width 1..8` is the word width in bytes,
+  `--verilog-endian little|big` orders the bytes within a word. Segment addresses
+  must be multiples of the width. The reader accepts `//` and `/* */` comments, `@`
+  addresses and `_` digit separators, and refuses a token wider than a word.
+- The readers are fuzzed. CI compares the output with `mkimage` (the compressed
+  header: `mkimage -C` only tags `ih_comp`, it does not compress), `uf2conv.py`
+  and `objcopy -O verilog` (little-endian output), and the lane fails if a
+  reference tool is missing. The manifest schema lists `uf2` and `verilog` as
+  formats.
+
+In Go: `EncodeUF2`, `DecodeUF2`, `VerifyUF2`, `EncodeVerilog`, `DecodeVerilog`,
+`CompressPayload`, `DecompressPayload`, `UF2Families` and `ParseUF2Family`.
 
 ## What it refuses {#refusals}
 
