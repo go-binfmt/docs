@@ -197,6 +197,45 @@ fwimg -I verilog --verilog-data-width 4 -O ihex -o fw.hex mem.hex
 In Go: `EncodeUF2`, `DecodeUF2`, `VerifyUF2`, `EncodeVerilog`, `DecodeVerilog`,
 `CompressPayload`, `DecompressPayload`, `UF2Families` and `ParseUF2Family`.
 
+## FIT images {#fit}
+
+Since v0.9.0, on [go-binfmt/fdt](../fdt/):
+
+```sh
+fwimg -O fit --fit-add fdt:board.dtb --fit-add ramdisk@0x8000000:initrd.img -o kernel.fit kernel.elf
+fwimg -O fit --fit-external --fit-align 1000 -o kernel.fit kernel.elf   # like mkimage -E -B 1000
+fwimg info kernel.fit                      # as mkimage -l prints it
+fwimg verify --require-hash kernel.fit     # every hash node
+```
+
+A FIT (Flattened Image Tree) is a devicetree blob that holds images and
+configurations. `-O fit` makes the input the kernel image (architecture and
+entry from the ELF or `--uimage-arch`), each `--fit-add TYPE[@LOAD]:FILE`
+another image, one hash node per `--fit-hash` algorithm (crc32, sha1, sha256,
+sha384, sha512; default sha256), and a configuration `conf-1` that names them.
+
+- **Layout.** `--fit-external` keeps the data after the structure
+  (`data-offset`), `--fit-position` at an absolute address (`data-position`),
+  `--fit-align` is mkimage `-B` (hex, a power of two). Images are padded to 8
+  bytes as `mkimage -E` does with mkimage 2026.10; older mkimage pads to 4, and
+  the differential test then skips those cases.
+- **`info` and `verify`** read a FIT: the listing is `mkimage -l`'s, compared
+  with it for every image type, and `verify` checks every hash node without a
+  manifest. A FIT with signature nodes is refused unless `--allow-signatures`;
+  signatures are not checked, and signing is out of scope.
+- **Refusals.** External data outside the file, overlapping extents, a position
+  inside the structure, `load + size` wrapping, a hash node without an algorithm
+  or value, and names that differ only by a unit address are refused. There is a
+  regression test for each FIT CVE of the spec notes (CVE-2018-1000205,
+  CVE-2020-10648, CVE-2021-27097, CVE-2018-3968, CVE-2024-38433,
+  CVE-2021-27138, CVE-2023-39902, CVE-2026-46728), and `FuzzFIT` runs in CI.
+
+In Go: `WriteFIT`, `AppendFIT`, `ParseFIT`, `(*FIT).Verify` and
+`(*FIT).Listing`. Writing is faster than `mkimage -f` (1.3x at 1 KiB, 2.7x at
+4 MiB, 7.1x at 32 MiB on the CI runner); `info` is behind `mkimage -l` (0.7x,
+0.4x, 0.1x), an open defect
+([go-binfmt/fwimg#33](https://github.com/go-binfmt/fwimg/issues/33)).
+
 ## What it refuses {#refusals}
 
 The input is untrusted, so the module refuses rather than guesses:
