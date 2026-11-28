@@ -1,0 +1,96 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<!-- No inline script or style, no other origin: scripts and the worker come from
+     this directory, WebAssembly may compile, and nothing may connect anywhere
+     but here. The file you choose is never sent. -->
+<meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'self' 'wasm-unsafe-eval'; worker-src 'self'; connect-src 'self'; style-src 'self'; img-src 'self'; base-uri 'none'; form-action 'none'">
+<meta name="referrer" content="no-referrer">
+<title>fwimg playground</title>
+<link rel="stylesheet" href="playground.css">
+</head>
+<body>
+<main>
+  <h1>fwimg playground</h1>
+  <p class="lead">Convert an ELF, Intel HEX, S-record, uImage, UF2 or Verilog hex file
+  into any of those formats, in your browser. This is the real
+  <a href="../fwimg/">fwimg</a> command compiled to WebAssembly: <strong>your file is
+  never uploaded</strong>, it is processed in a Web Worker on this machine and
+  limited to 32 MiB. <a href="../">Back to the documentation</a>.</p>
+
+  <section aria-labelledby="in">
+    <h2 id="in">Input</h2>
+    <label for="file">File</label>
+    <input type="file" id="file">
+    <label for="inputFormat">Input format</label>
+    <select id="inputFormat">
+      <option value="">detect from the content</option>
+      <option value="elf">elf</option>
+      <option value="ihex">ihex</option>
+      <option value="srec">srec</option>
+      <option value="uimage">uimage</option>
+      <option value="uf2">uf2</option>
+      <option value="verilog">verilog</option>
+      <option value="binary">binary (raw: set the base address)</option>
+    </select>
+    <label for="base">Base address (raw input, Verilog)</label>
+    <input type="text" id="base" placeholder="0x8000000" autocomplete="off" spellcheck="false">
+    <label class="inline"><input type="checkbox" id="useVaddr"> use virtual addresses (ELF)</label>
+  </section>
+
+  <section aria-labelledby="out">
+    <h2 id="out">Output</h2>
+    <label for="format">Format</label>
+    <select id="format">
+      <option value="binary">binary (objcopy -O binary)</option>
+      <option value="ihex">ihex (Intel HEX)</option>
+      <option value="srec">srec (Motorola S-record)</option>
+      <option value="uimage">uimage (U-Boot)</option>
+      <option value="uf2">uf2</option>
+      <option value="verilog">verilog (hex memory file)</option>
+    </select>
+    <label for="imgname">Image name (srec, uimage)</label>
+    <input type="text" id="imgname" autocomplete="off" spellcheck="false">
+    <label for="load">uImage load address</label>
+    <input type="text" id="load" placeholder="0x80000" autocomplete="off" spellcheck="false">
+    <label for="entry">uImage entry point</label>
+    <input type="text" id="entry" placeholder="0x80000" autocomplete="off" spellcheck="false">
+    <label for="uimageComp">uImage compression</label>
+    <select id="uimageComp">
+      <option value="">none</option>
+      <option value="gzip">gzip</option>
+      <option value="lz4">lz4</option>
+    </select>
+    <label for="uf2Family">UF2 family (name or number)</label>
+    <input type="text" id="uf2Family" placeholder="RP2040" autocomplete="off" spellcheck="false">
+    <label for="verilogWidth">Verilog data width (1 to 8)</label>
+    <input type="text" id="verilogWidth" placeholder="4" autocomplete="off" spellcheck="false">
+    <label for="verilogEndian">Verilog byte order</label>
+    <select id="verilogEndian">
+      <option value="">default</option>
+      <option value="little">little</option>
+      <option value="big">big</option>
+    </select>
+  </section>
+
+  <p class="actions">
+    <button type="button" id="convert" disabled>Convert</button>
+    <button type="button" id="cancel" disabled>Cancel</button>
+  </p>
+  <p id="status" role="status" aria-live="polite">Loading...</p>
+  <p><a id="download" hidden>Download</a></p>
+
+  <h2>Command</h2>
+  <pre id="args"></pre>
+  <h2>What fwimg read (<code>fwimg info</code>)</h2>
+  <pre id="info"></pre>
+  <h2>The output, read back</h2>
+  <pre id="outinfo"></pre>
+  <h2>Messages</h2>
+  <pre id="stderr"></pre>
+</main>
+<script src="playground.js"></script>
+</body>
+</html>
