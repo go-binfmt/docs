@@ -6,7 +6,7 @@
 # version of the code the pages describe, or "main" while no release is tagged.
 # The CI sets it through --baseURL, from params.docs.version below; this default
 # is the same build.
-baseURL: "https://go-binfmt.github.io/docs/0.8/"
+baseURL: "https://go-binfmt.github.io/docs/0.9/"
 title: "go-binfmt"
 # ⛔ No languageCode: deprecated in Hugo 0.158 in favour of locale, and the
 # languages block below already says which language this is.
@@ -57,7 +57,7 @@ params:
     # The newest release of any tool the pages describe (elfpatch, fwimg):
     # v0.6.0 is /docs/0.6/, and /docs/latest/ follows the newest. Bump it in
     # the same PR that documents a new minor (see README, "Versions").
-    version: "v0.8.0"
+    version: "v0.9.0"
   description: "Pure-Go tooling for binary formats, ELF first: elfpatch edits an executable's interpreter, RUNPATH/RPATH and DT_NEEDED in place, with no C toolchain."
   navbar:
     displayTitle: true
